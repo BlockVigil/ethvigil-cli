@@ -1,0 +1,9 @@
+.DS_Store
+.python-version
+.idea
+build
+dist
+__pycache__
+ev_cli.egg-info
+settings.json
+*.spec
