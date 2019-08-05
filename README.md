@@ -12,6 +12,8 @@ Download the [Linux](https://beta.ethvigil.com/downloads/ev-cli-linux.zip "Linux
 
 Most people would keep ev-cli in their primary user folder or set an alias for easy command-line access.
 
+`sudo cp /path/to/ev-cli /usr/local/bin/`
+
 ## Installation (via pip)
 
 ```bash
