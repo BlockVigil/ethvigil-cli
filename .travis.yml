@@ -1,0 +1,58 @@
+# Travis-Ci
+language: python
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      python: 3.6
+      dist: xenial
+
+    - os: osx
+      osx_image: xcode10.2
+      language: shell
+
+    - os: windows
+      language: shell
+      before_install:
+        - choco install python
+        - choco install zip
+        - python -m pip install --upgrade pip
+      env: PATH=/c/python37:/c/python37/Scripts:$PATH
+
+install: pip3 install -r requirements.txt --upgrade pip  # all three OSes agree about 'pip3'
+
+script:
+  - python3 --version || python --version;
+  - pytest
+  - pyinstaller --onefile click_cli.py --hidden-import click --clean --name="ev-cli"
+  - mkdir ethvigil-cli
+  - mv dist/ev-cli ethvigil-cli/
+  - chmod +x ethvigil-cli/ev-cli
+  - cp README.md ethvigil-cli/
+  - ./ethvigil-cli/ev-cli
+  - zip -r ev-cli-${TRAVIS_OS_NAME}.zip ethvigil-cli
+  - mv ev-cli-${TRAVIS_OS_NAME}.zip dist/
+  - ls dist/
+
+before_cache:
+  - rm -rf $HOME/.cache/pip/log
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_deploy:
+  - export TRAVIS_TAG="preview-$(git log --format=%h -1)"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: QgH5w4MKBVV3UOXbzypvWgdAexCdLMTViw/tYz4WYGMAngTjy/FwkDZIbPPWm+PYPnXFk5bxckdsEjrIXftcQJcJ2iVwonE4AFKXaiiABlNLoORoKUf8gWVK6eWFoXWQV2DAi81GHSRZEsyEX+4njHvGHFHZRzN+oJ2fMkr+O8BtHy27RJGDkeQGmLTrSpda78+tXyai6tLmusqlctIafiC5UKUQFLAJ2/3/It0EliJMsTCbAHSWaiaxVoUAvht1oujSS5zqgCKDFXCO/3UmF8I5thKKy0Zann1R5MluW/glb6eOtk1zsftwD+hSFoKUJ4YaKJQXwu5L5kSQDvCr4/fxzX0aOTjPpaQSqnV7oAJgNbNNauD3p0SyUDIaumT/4UmW5Hyhv4HOS7zG4lGJk/MBj3ZKc68Q3zDRQqz2JFG+tZJFfvGZTfuRnPY0Dz2vLg0TIs0X4ovGSgpqMoM9F54ZgttaawkxXGAgQHc4K7Ja24qMs42S0teH6uGhuyD5nZN6qQ6KAtel3AFi1VkikBuotcoHKqpgYHSMSdqEQRrXRBYwnkSHIE9JX/WYo3/bjNp416HlPkD5NLnNR9flEPs0TjM9RUdjFRBS6Pq3dSU0jH4Ski1s7nTKJNzrTcKbpYeM/s9amgG3ffIA1+tgzBxrFGv7V4+Ko4yL3tnVNwA=
+  file_glob: true
+  skip_cleanup: true
+  draft: true
+  overwrite: true
+  on:
+    repo: blockvigil/ethvigil-cli
+    #branch: master
