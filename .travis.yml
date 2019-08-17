@@ -55,4 +55,4 @@ deploy:
   overwrite: true
   on:
     repo: blockvigil/ethvigil-cli
-    #branch: master
+    branch: 1-adding-travis-builds
