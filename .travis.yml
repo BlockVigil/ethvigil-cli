@@ -12,14 +12,6 @@ matrix:
       osx_image: xcode10.2
       language: shell
 
-    - os: windows
-      language: shell
-      before_install:
-        - choco install python
-        - choco install zip
-        - python -m pip install --upgrade pip
-      env: PATH=/c/python37:/c/python37/Scripts:$PATH
-
 install: pip3 install -r requirements.txt --upgrade pip  # all three OSes agree about 'pip3'
 
 script:
