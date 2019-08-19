@@ -1,0 +1,54 @@
+# Travis-Ci
+language: python
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      python: 3.6
+      dist: xenial
+
+    - os: osx
+      osx_image: xcode10.2
+      language: shell
+
+install: pip3 install -r requirements.txt --upgrade pip  # all three OSes agree about 'pip3'
+
+script:
+  - python3 --version || python --version;
+  - pytest
+  - pyinstaller --onefile click_cli.py --hidden-import click --clean --name="ev-cli"
+  - mkdir ethvigil-cli
+  - mv dist/ev-cli ethvigil-cli/
+  - chmod +x ethvigil-cli/ev-cli
+  - cp README.md ethvigil-cli/
+  - ./ethvigil-cli/ev-cli
+  - zip -r ev-cli-${TRAVIS_OS_NAME}.zip ethvigil-cli
+  - mv ev-cli-${TRAVIS_OS_NAME}.zip dist/
+  - ls dist/
+
+before_cache:
+  - rm -rf $HOME/.cache/pip/log
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_deploy:
+  - export TRAVIS_TAG="preview-$(git log --format=%h -1)"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: QgH5w4MKBVV3UOXbzypvWgdAexCdLMTViw/tYz4WYGMAngTjy/FwkDZIbPPWm+PYPnXFk5bxckdsEjrIXftcQJcJ2iVwonE4AFKXaiiABlNLoORoKUf8gWVK6eWFoXWQV2DAi81GHSRZEsyEX+4njHvGHFHZRzN+oJ2fMkr+O8BtHy27RJGDkeQGmLTrSpda78+tXyai6tLmusqlctIafiC5UKUQFLAJ2/3/It0EliJMsTCbAHSWaiaxVoUAvht1oujSS5zqgCKDFXCO/3UmF8I5thKKy0Zann1R5MluW/glb6eOtk1zsftwD+hSFoKUJ4YaKJQXwu5L5kSQDvCr4/fxzX0aOTjPpaQSqnV7oAJgNbNNauD3p0SyUDIaumT/4UmW5Hyhv4HOS7zG4lGJk/MBj3ZKc68Q3zDRQqz2JFG+tZJFfvGZTfuRnPY0Dz2vLg0TIs0X4ovGSgpqMoM9F54ZgttaawkxXGAgQHc4K7Ja24qMs42S0teH6uGhuyD5nZN6qQ6KAtel3AFi1VkikBuotcoHKqpgYHSMSdqEQRrXRBYwnkSHIE9JX/WYo3/bjNp416HlPkD5NLnNR9flEPs0TjM9RUdjFRBS6Pq3dSU0jH4Ski1s7nTKJNzrTcKbpYeM/s9amgG3ffIA1+tgzBxrFGv7V4+Ko4yL3tnVNwA=
+  file: dist/*
+  file_glob: true
+  skip_cleanup: true
+  draft: true
+  overwrite: true
+  on:
+    repo: blockvigil/ethvigil-cli
+    branch: master
+notifications:
+  slack:
+    secure: PnqTCJMmjpH68DT4OwndIVU53O19kHwuBaRPMvXnKrbhd6eC0aF6fvw6KdSq04RxCqwWi9z1H7SErL6L9VfNdtEtWDrFSx6Zhj6XlaVxJWKLVcetdEqBbhVn3zTgK1P2Z0aDUaiblhXhAmkkza427KOFWrOqK4/G/K7Sl7ocm8kWtB0RXH/30DhnU6ASq8Q3zHuF9Lgp8gifmFLlfo2NhW4NtRMa5Yfwyo+uDfikXq7+85Id8D/aNy846+4kqj0ImEFvR1Gyi7cbuZsdvjufwjbuJmKTIELJ5LYe7/uDC8JCjGkMjHwQCtKIoJX6zf5iKZn+zRRNS+ubUCRkvW4TmBQl7PV1JaDvLTdZHrocxPK8zw6opFRDNyqZNqEWUwBzZlUou1ydmxDn/JarIUDcVC8M0hd4G0v3do+dPuFoBacrlfLSZVIvBp2UOaHYn1TmPjMLp+ex1hSXc+K9htK2aCDMxBLkQ2JeG54XvUVzaNCnJ/ZS5sMliihMO894gGLgk7W8kvLF0mel3eONjJvBmPVjR8+4bRTAXdjr3HcwzhuyUTHQk+hPoQ1s3A3kvkLuqYNLsJLPuzJFPIHy4e/KELGs8UnRQj8V/JD4q3DSwEH9Z84UiITidqxApXBHj2xqJ6dL3Rx0YF6+vQkIc75IzM2etQqVBI/fZ8HgzpdGMOo=
