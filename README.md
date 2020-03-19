@@ -22,9 +22,14 @@ git clone https://github.com/BlockVigil/ethvigil-cli.git
 cd ethvigil-cli
 pip install -e .
 ```
-## Sign up with invite code
 
-Head to [EthVigil Beta](https://beta.ethvigil.com/?clisignup=true) to generate an invite code.
+## Setting up your account
+
+There are a few handy paths you can take to setup or initialize your account on the EthVigil CLI. Choose one of them from the following as it fits your scenario.
+
+### ✅ Generate a new EthVigil invite code and complete signup on CLI
+
+Head to [EthVigil Beta](https://beta.ethvigil.com/?clisignup=true) to generate an invite code. Next you will need to run an init on the CLI tool.
 
 ```bash
 ev-cli init
@@ -60,7 +65,33 @@ On EthVigil APIs, you are primarily idenitified by the above 160 bit address tha
 
 You can import the corresponding private key to a wallet solution like MetaMask.
 
->The keys are locally stored and EthVigil does not have access to them. You can check the `settings.json` file once init is complete.
+>The keys are locally stored and EthVigil does not have access to them. You can check the `~/.ethvigil/settings.json` file once init is complete.
+
+>Feel free to skip to the section **[`Get your EthVigil account information`](https://ethvigil.com/docs/cli_onboarding.html#get-your-ethvigil-account-information)** if you have completed your account setup following the above instructions.
+
+### ✅ Reuse your in-browser local wallet settings (No Metamask involved)
+
+If you are already signed up [on the Web UI with a local wallet](https://ethvigil.com/docs/web_onboarding/#sign-up-with-invite-code), you can export a `settings.json` file that can be used to initialize the CLI.
+
+Use the `Export Key` option from the `Settings` dropdown to download the `settings.json`
+
+![export EthVigil settings from Web UI screenshot](https://ethvigil.com/docs/assets/cli/exportsettings.png)
+
+Next run the following command on your terminal to import these settings
+
+```bash
+ev-cli importsettings path/to/settings.json
+```
+
+>If you do not have ev-cli in your path and/or calling it directly, you will need to prefix `./`
+
+```bash
+./ev-cli importsettings path/to/settings.json
+```
+
+And that's it! Your CLI tool is now ready for further use. The GIF below demonstrates these instructions in action.
+
+![](https://ethvigil.com/docs/assets/cli/ev_cli_importsettings.gif)
 
 ## Get your EthVigil account information
 
