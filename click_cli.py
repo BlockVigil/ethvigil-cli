@@ -6,6 +6,7 @@ import json
 import os
 import pwd
 from eth_utils import to_normalized_address
+from solidity_parser import parser
 
 CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help']
@@ -109,6 +110,7 @@ def init(ctx_obj, verbose):
             login_data = ev_login(ctx_obj['settings']['INTERNAL_API_ENDPOINT'], new_account.key.hex(), verbose)
             if login_data:
                 ctx_obj['settings']['ETHVIGIL_API_KEY'] = login_data['key']
+                ctx_obj['settings']['READ_API_KEY'] = login_data['readkey']
                 ctx_obj['settings']['REST_API_ENDPOINT'] = login_data['api_prefix']
                 with open(pwd.getpwuid(os.getuid()).pw_dir+'/.ethvigil/settings.json', 'w') as f:
                     json.dump(ctx_obj['settings'], f)
@@ -205,7 +207,7 @@ def importsettings(importfile, verbose):
                    'for constructor inputs of type (string, address). '
                    'Can be left empty if there are no inputs accepted by the constructor')
 @click.option('--verbose', 'verbose', type=bool, default=False)
-@click.argument('contract', type=click.File('r'))
+@click.argument('contract', type=click.Path(exists=True, dir_okay=False))
 @click.pass_obj
 def deploy(ctx_obj, contract_name, inputs, verbose, contract):
     """
@@ -223,12 +225,43 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
         c_inputs = json.loads(inputs)
     else:
         c_inputs = list()  # an empty list
+    sources = dict()
+    if contract[0] == '~':
+        click.echo('Found home path')
+        contract_full_path = os.path.expanduser(contract)
+    else:
+        contract_full_path = contract
+    resident_directory = ''.join(map(lambda x: x+'/', contract_full_path.split('/')[:-1]))
+    contract_file_name = contract_full_path.split('/')[-1]
+    contract_file_obj = open(file=contract_full_path)
+    main_contract_src = ''
     while True:
-        chunk = contract.read(1024)
+        chunk = contract_file_obj.read(1024)
         if not chunk:
             break
-        contract_src += chunk
+        main_contract_src += chunk
 
+    sources[f'ev-cli/{contract_file_name}'] = {'content': main_contract_src}\
+
+    # loop through imports and add them to sources
+    source_unit = parser.parse(main_contract_src)
+    source_unit_obj = parser.objectify(source_unit)
+    for each in source_unit_obj.imports:
+        import_location = each['path'].replace("'", "")
+        # TODO: follow specified relative paths and import such files too
+        if import_location[:2] != './':
+            click.echo(f'You can only import files from within the same directory as of now', err=True)
+            return
+        # otherwise read the file into the contents mapping
+        full_path = resident_directory + import_location[2:]
+        imported_contract_obj = open(full_path, 'r')
+        contract_src = ''
+        while True:
+            chunk = imported_contract_obj.read(1024)
+            if not chunk:
+                break
+            contract_src += chunk
+        sources[f'ev-cli/{import_location[2:]}'] = {'content': contract_src}
     msg = "Trying to deploy"
     message_hash = defunct_hash_message(text=msg)
     # deploy from alpha account
@@ -238,8 +271,10 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
         'sig': signed_msg.signature.hex(),
         'name': contract_name,
         'inputs': c_inputs,
-        'code': contract_src
+        'sources': sources,
+        'sourceFile': f'ev-cli/{contract_file_name}'
     }
+    # click.echo(deploy_json)
     # --ETHVIGIL API CALL---
     r = requests.post(ctx_obj['settings']['INTERNAL_API_ENDPOINT'] + '/deploy', json=deploy_json)
     if verbose:
