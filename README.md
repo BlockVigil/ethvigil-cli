@@ -134,7 +134,7 @@ Address: 0x616cc6fd735462df69fc0f5bdb61bc12921b3b17
 ## Deploy a Solidity smart contract
 
 We have included a couple of smart contracts written in Solidity in the code repo to help you test out their deployment right away.
-You can find them in `token.sol` and `SignerControlBase.sol`
+You can find them in `ERC20Mintable.sol` and `SignerControlBase.sol`
 
 The syntax to deploy a contract through the CLI tool is:
 
@@ -143,7 +143,9 @@ ev-cli deploy <path-to-solidity-contract> \
  --contractName=<contract-name> \
  --constructorInputs='JSON representation of the constructor arguments'
 ```
->Currently EthVigil API accepts **only one** Solidity file that contains the entire smart contract logic. It will be enhanced in the near future where we will allow multiple files to be uploaded to ease development with imports of other modules and libraries
+>Currently EthVigil API accepts Solidity files that import other Solidity files containing smart contracts and library code, **within the same directory**. For example, your imports must be of the form `import './SafeMath.sol'` denoting that `SafeMath.sol` is to be found in the same directory. 
+
+>We will soon add support for parsing relative import paths as well. Feel free to create a pull request against our [Github repo](https://github,com/blockvigil/ethvigil-cli) or chat with us on the [public discord channel]() if you wish to contribute to solving this.
 
 ### ERC20 token contract example - token.sol
 ```bash
