@@ -7,3 +7,4 @@ __pycache__
 ev_cli.egg-info
 settings.json
 *.spec
+.pytest_cache

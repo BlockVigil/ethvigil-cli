@@ -16,7 +16,7 @@ install: pip3 install -r requirements.txt --upgrade pip  # all three OSes agree 
 
 script:
   - python3 --version || python --version;
-  - pytest
+  - pytest -spPf test_cli.py
   - pyinstaller --onefile click_cli.py --hidden-import click --clean --name="ev-cli"
   - mkdir ethvigil-cli
   - mv dist/ev-cli ethvigil-cli/

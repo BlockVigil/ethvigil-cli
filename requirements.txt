@@ -7,3 +7,4 @@ eth-account == 0.4.0
 PyInstaller==3.6
 pytest==4.4.1
 pytest-click==0.3
+solidity_parser
