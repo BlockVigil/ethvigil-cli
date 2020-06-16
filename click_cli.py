@@ -54,7 +54,7 @@ def ev_login(internal_api_endpoint, private_key, verbose=False):
     msg = "Trying to login"
     message_hash = encode_defunct(text=msg)
     signed_msg = Account.sign_message(message_hash, private_key)
-    # --THUNDERVIGIL API CALL---
+    # --ETHVIGIL API CALL---
     headers = {'accept': 'application/json', 'Content-Type': 'application/json'}
     r = requests.post(internal_api_endpoint + '/login',
                       json={'msg': msg, 'sig': signed_msg.signature.hex()}, headers=headers)
