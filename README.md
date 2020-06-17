@@ -1,4 +1,4 @@
-# CLI Tool for EthVigil APIs
+# CLI Tool for EthVigil APIs [![Build Status](https://travis-ci.org/blockvigil/ethvigil-cli.svg?branch=master)](https://travis-ci.org/blockvigil/ethvigil-cli)
 The guide will introduce you to the EthVigil API endpoints with the help of a CLI tool that abstracts away the underlying HTTP requests. By the end of this guide, you shall be able to perform the following:
 
 * sign up using your exclusive EthVigil invite code
