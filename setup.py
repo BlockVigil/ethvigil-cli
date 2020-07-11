@@ -13,7 +13,8 @@ setup(
         'eth-account == 0.4.0',
         'solidity_parser == 0.0.7',
         'click == 7.0',
-        "tenacity"
+        "tenacity==6.2.0",
+        "antlr4-python3-runtime>=4.7,<4.8"
     ],
     classifiers=[
             "Programming Language :: Python :: 3",

@@ -245,7 +245,6 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
     if inputs:
         c_inputs = json.loads(inputs)
     else:
-        click.echo('Seting constructor input prompt to true')
         constructor_input_prompt = True
         c_inputs = list()  # an empty list
     sources = dict()
