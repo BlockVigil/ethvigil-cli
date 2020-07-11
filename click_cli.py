@@ -9,6 +9,7 @@ import os
 import pwd
 from eth_utils import to_normalized_address
 from solidity_parser import parser
+from utils.EVContractUtils import extract_abi, ABIParser
 
 CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help']
@@ -235,15 +236,17 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
 
     CONTRACT: path to the solidity file
 
-    Usage example: ev-cli deploy ../token.sol --contractName=FixedSupplyToken --constructorInputs='JSON representation of the constructor arguments'
+    Usage example: ev-cli deploy contracts/Microblog.sol --contractName=Microblog --constructorInputs='JSON representation of the constructor arguments in an array'
     """
-    contract_src = ""
+    constructor_input_prompt = False
     if verbose:
         click.echo('Got constructor inputs: ')
         click.echo(inputs)
     if inputs:
         c_inputs = json.loads(inputs)
     else:
+        click.echo('Seting constructor input prompt to true')
+        constructor_input_prompt = True
         c_inputs = list()  # an empty list
     sources = dict()
     if contract[0] == '~':
@@ -281,6 +284,28 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
                 break
             contract_src += chunk
         sources[f'ev-cli/{import_location[2:]}'] = {'content': contract_src}
+
+    if len(c_inputs) == 0 and constructor_input_prompt:
+        abi_json = extract_abi(ctx_obj['settings'], {'sources': sources, 'sourceFile': f'ev-cli/{contract_file_name}'})
+        abp = ABIParser(abi_json=abi_json)
+        abp.load_abi()
+        if len(abp.constructor_params()) > 0:
+            click.echo('Enter constructor inputs...')
+            for idx, each_param in enumerate(abp.constructor_params()):
+                param_type = abp._constructor_mapping["constructor"]["input_types"][idx]
+                param_type_cat = abp.type_category(param_type)
+                arg = click.prompt(f'{each_param}({param_type})')
+                if param_type_cat == 'integer':
+                    arg = int(arg)
+                elif param_type_cat == 'array':
+                    # check if it can be deserialized into a python dict
+                    try:
+                        arg_dict = json.loads(arg)
+                    except json.JSONDecodeError:
+                        click.echo(f'Parameter {each_param} of type {param_type} '
+                                   f'should be correctly passed as a JSON array', err=True)
+                        sys.exit(1)
+                c_inputs.append(arg)
     msg = "Trying to deploy"
     message_hash = encode_defunct(text=msg)
     # deploy from alpha account

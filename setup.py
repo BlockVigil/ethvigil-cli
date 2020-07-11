@@ -12,7 +12,8 @@ setup(
         'requests == 2.22.0',
         'eth-account == 0.4.0',
         'solidity_parser == 0.0.7',
-        'click == 7.0'
+        'click == 7.0',
+        "tenacity"
     ],
     classifiers=[
             "Programming Language :: Python :: 3",

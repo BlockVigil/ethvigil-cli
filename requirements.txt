@@ -8,3 +8,4 @@ PyInstaller==3.6
 pytest==4.4.1
 pytest-click==0.3
 solidity_parser==0.0.7
+tenacity
