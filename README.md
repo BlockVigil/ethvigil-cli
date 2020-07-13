@@ -148,6 +148,20 @@ Deploying tx: 0x17a8009565731f45a1621905a7e85e84a6330b485ac3e7e450d90f126b6c3006
 ```
 Observe that we are setting `--constructorInputs`. It is optional for contracts that have no constructor inputs programmed.
 
+If you do not pass the `--constructorInputs` argument, you shall be prompted for the same.
+
+```
+ev-cli deploy contracts/ERC20Mintable.sol --contractName='ERC20Mintable'
+
+Enter constructor inputs...
+name(string): TestToken
+symbol(string): TTK
+decimals(uint8): 18
+Contract ERC20Mintable deployed successfully
+Contract Address: 0x9290b03870b0c4c99cc3c1e1dfcfa1ff789af6c0
+Deploying tx: 0x699af417f4349f9e29d63dbc894874b5ae865fefe8e7a6bb2365339fab774211
+```
+
 ### SignerControlBase.sol
 
 This contract forms the base of [EthVigil's Proxy+Signer Control contract](https://medium.com/blockvigil/signer-control-cum-proxy-smart-contract-a-look-at-ethvigils-latest-offering-9ad6c098c095). Without going into the logic of the contract, let us take a look at the constructor as written in the contract.
