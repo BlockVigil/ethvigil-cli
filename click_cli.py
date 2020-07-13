@@ -223,7 +223,7 @@ def importsettings(importfile, verbose):
 @click.option('--contractName', 'contract_name', required=True,
               help='name of the contract to be deployed. For eg. FixedSupplyToken')
 @click.option('--constructorInputs', 'inputs',
-              help='constructor input values as a JSON list. '
+              help='constructor input values as a JSON list. OPTIONAL. If you do not specify, you shall be prompted for the same. '
                    'Eg: \'["abced", "0x008604d4997a15a77f00CA37aA9f6A376E129DC5"]\' '
                    'for constructor inputs of type (string, address). '
                    'Can be left empty if there are no inputs accepted by the constructor')
