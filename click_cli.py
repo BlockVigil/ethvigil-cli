@@ -439,8 +439,7 @@ def verifycontract(ctx_obj, verbose, interactive, contract_address, contract_nam
                 sys.exit(1)
             for idx, each in enumerate(c_r['data']):
                 compilers[idx] = each
-        for k in compilers:
-            click.secho(f'{k+1}: {compilers[k]["full"]}', fg='cyan')
+            click.echo_via_pager(_gen_compilers_list(compilers))
         i = click.prompt('Select option from compiler versions above. Eg. 2', type=int)
         solidity_compiler = compilers[i-1]['full']
         optimization = click.confirm('Optimization enabled?')
@@ -580,6 +579,10 @@ def getoas(ctx_obj, contractaddress, verbose):
     else:
         click.echo(f'Contract {contractaddress} not registered on EthVigil')
 
+
+def _gen_compilers_list(l):
+    for k in l:
+        yield click.style(f'{k+1}: {l[k]["full"]}\n', fg='cyan')
 
 if __name__ == '__main__':
     cli()
