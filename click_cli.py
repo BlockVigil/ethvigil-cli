@@ -192,6 +192,8 @@ def accountinfo(ctx_obj, raw):
                     click.echo('--------------------')
             elif k == 'key':
                 click.echo(f'EthVigil API key: \t {d}\n=============\n')
+            elif k == 'readKey':
+                click.echo(f'EthVigil API(read) key: \t {d}\n=============\n')
             elif k == 'api_prefix':
                 click.echo(f'REST API prefix: \t {d}\n=============\n')
             elif k == 'hooks':
