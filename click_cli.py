@@ -402,7 +402,7 @@ def verifycontract(ctx_obj, verbose, interactive, contract_address, contract_nam
     headers = {'accept': 'application/json', 'Content-Type': 'application/json',
               'X-API-KEY': ctx_obj['settings']['ETHVIGIL_API_KEY']}
     main_contract_src = ''
-    if interactive:
+    if not contract_file or interactive:
         contract_address = click.prompt('Contract address to be verified')
         contract_address = to_normalized_address(contract_address)
         contract_name = click.prompt('Contract name')
