@@ -148,7 +148,7 @@ Deploying tx: 0x17a8009565731f45a1621905a7e85e84a6330b485ac3e7e450d90f126b6c3006
 ```
 Observe that we are setting `--constructorInputs`. It is optional for contracts that have no constructor inputs programmed.
 
-If you do not pass the `--constructorInputs` argument, you shall be prompted for the same.
+If you do not pass the `--constructorInputs` argument for a contract that expects constructor arguments, you shall be prompted for the same.
 
 ```
 ev-cli deploy contracts/ERC20Mintable.sol --contractName='ERC20Mintable'
@@ -214,6 +214,68 @@ Contract SignerControlBase deployed successfully
 Contract Address: 0x746254cb1888a0f073fca2cf397457fb3e54396f
 Deploying tx: 0xcb2cb6f036e01eb22707084f4780d731ee959a50fe6b6a562643cfa40f3d5e2f
 ```
+## Verifying a previously deployed contract
+
+Ethereum is decentralized, and you may have deployed contracts through a different interface, for eg, remix.ethereum.org and would like to operate on them through your current EthVigil account.
+
+For this purpose, you will have to verify and add the contract to your account by specifying a few details, including the contract source code.
+
+>To use the feature of verifying and adding contracts to EthVigil, we assume that you have the source code and the address at which the contract has been deployed.
+
+Here we have deployed the `Microblog.sol` contract found in the CLI example contracts directory, [`contracts/Microblog.sol`](contracts/Microblog.sol) through remix.ethereum.org , compiled with the Solidity compiler `v0.5.17+commit.d19bba13` and optimization flag **off**.
+
+<img src="assets/remix_solidity_compiler.png" height="40%" width="40%" alt="Remix IDE solidity compilation parameters"/>
+
+### Interactive mode
+
+Run the verify command in interactive mode
+
+```bash
+ev-cli verifycontract -i
+```
+
+or
+
+```bash
+ev-cli verifycontract --interactive
+```
+
+Let us go over the input prompts for the interactive mode.
+
+* `Contract address to be verified: 0x797ae7841281b6b3a72496b0193c91d150c7105d`
+
+* `Contract name: Microblog`
+
+* `Location of Solidity file: contracts/Microblog.sol`
+
+Next you will have a paged list of compilers from which you have to choose the integer value against the compiler version which was used to compile the contract on https://remix.ethereum.org.
+
+<img src="assets/compiler_list.png" height="40%" width="40%" alt="CLI list of solidity compilers" />
+
+>In our case, the Solidity compiler `v0.5.17+commit.d19bba13` is at `27`. **Press `q` to exit the list and go back to the input prompt where you can enter this value**
+
+The last input is regarding the optimization flag set originally at the time of compiling the deployed contract. Which is off in this case.
+
+If you entered all the values at the prompts correctly, you should see a success message.
+
+![Screenshot of verification process](assets/verification_entire_process.png)
+
+### Non-interactive mode (pass CLI arguments)
+
+The same process as described above can be achieved from the command line by passing the right arguments against the parameters.
+
+>You can run `ev-cli verifycontract --help` to learn about all the parameters
+
+```bash
+ev-cli verifycontract --contractAddress 0x9d885fac1e993529b37fc50415a9c152a3ed5fd4 \
+--contractName Microblog \
+--compilerVersion 'v0.5.17+commit.d19bba13' \
+--optimization false \
+--contractFile contracts/Microblog.sol
+```
+
+![Non-interactive mode verification](assets/noninteractive-verification.png)
+
 
 ## Adding integrations
 You can add integrations like webhooks/email notifications/slack notifications on a contract deployed via EthVigil APIs.
