@@ -14,7 +14,8 @@ setup(
         'solidity_parser == 0.0.7',
         'click == 7.0',
         "tenacity==6.2.0",
-        "antlr4-python3-runtime>=4.7,<4.8"
+        "antlr4-python3-runtime>=4.7,<4.8",
+        "colorama==0.4.3"
     ],
     classifiers=[
             "Programming Language :: Python :: 3",

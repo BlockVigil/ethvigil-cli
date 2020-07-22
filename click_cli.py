@@ -3,7 +3,8 @@ import click
 import requests
 from eth_account.messages import defunct_hash_message, encode_defunct
 from eth_account.account import Account
-import getpass
+from utils.http_helper import make_http_call
+from utils.exceptions import *
 import json
 import os
 import pwd
@@ -191,6 +192,8 @@ def accountinfo(ctx_obj, raw):
                     click.echo('--------------------')
             elif k == 'key':
                 click.echo(f'EthVigil API key: \t {d}\n=============\n')
+            elif k == 'readKey':
+                click.echo(f'EthVigil API(read) key: \t {d}\n=============\n')
             elif k == 'api_prefix':
                 click.echo(f'REST API prefix: \t {d}\n=============\n')
             elif k == 'hooks':
@@ -365,6 +368,131 @@ def registerhook(ctx_obj, contract, url):
 
 
 @cli.command()
+@click.option('--interactive', '-i', is_flag=True, help='Turn on interactive mode')
+@click.option('--verbose', '-v', is_flag=True, help='Verbose')
+@click.option('--contractAddress', 'contract_address', help='Address of an already deployed contract')
+@click.option(
+    '--contractName',
+    'contract_name',
+    help='Exact string representing the name of a deployed contract'
+)
+@click.option(
+    '--compilerVersion',
+    'solidity_compiler',
+    help='Exact string representing the version of the Solidity compiler that compiled the deployed contract. '
+         'For eg. \'v0.5.17+commit.d19bba13\''
+)
+@click.option(
+    '--optimization',
+    'optimization',
+    type=bool,
+    help='Boolean: was optimization turned on during compilation'
+)
+@click.option(
+    '--contractFile',
+    'contract_file',
+    help='Location of the file that contains the contract code',
+    type=click.Path(exists=True, dir_okay=False)
+)
+@click.pass_obj
+def verifycontract(ctx_obj, verbose, interactive, contract_address, contract_name, solidity_compiler, optimization, contract_file):
+    """
+    Verify and add a contract to your EthVigil account that was previously deployed through a different interface, for eg. https://remix.ethereum.org
+    """
+    headers = {'accept': 'application/json', 'Content-Type': 'application/json',
+              'X-API-KEY': ctx_obj['settings']['ETHVIGIL_API_KEY']}
+    main_contract_src = ''
+    if not contract_file or interactive:
+        contract_address = click.prompt('Contract address to be verified')
+        contract_address = to_normalized_address(contract_address)
+        contract_name = click.prompt('Contract name')
+        contract_file = click.prompt('Location of Solidity file', type=click.Path(exists=True, dir_okay=False))
+        with open(contract_file, 'r') as f:
+            while True:
+                chunk = f.read(1024)
+                if not chunk:
+                    break
+                main_contract_src += chunk
+        click.secho('Getting a list of compiler versions...', fg='green')
+        # get list of compilers
+        compilers = dict()
+        try:
+            c_r = make_http_call(
+                request_type='get',
+                url=ctx_obj['settings']['INTERNAL_API_ENDPOINT'] + '/compilers',
+                headers={'accept': 'application/json'}
+            )
+        except Exception as e:
+            click.echo('Exception retrieving list of compilers', err=True)
+            if isinstance(e, EVHTTPError):
+                click.echo('Possible HTTP error. Try with --verbose flag for more information', err=True)
+                if verbose:
+                    click.echo(e.__str__(), err=True)
+            elif isinstance(e, EVAPIError):
+                click.echo('Possible API error.Try with --verbose flag for more information', err=True)
+                if verbose:
+                    click.echo(e.__str__(), err=True)
+            elif isinstance(e, EVBaseException) and verbose:
+                click.echo(e.__str__(), err=True)
+            sys.exit(1)
+        if type(c_r['data']) == list:
+            if len(c_r['data']) < 1:
+                click.echo('Got empty list of compilers. Exiting...', err=True)
+                sys.exit(1)
+            for idx, each in enumerate(c_r['data']):
+                compilers[idx] = each
+            click.echo_via_pager(_gen_compilers_list(compilers))
+        i = click.prompt('Select option from compiler versions above. Eg. 2', type=int)
+        solidity_compiler = compilers[i-1]['full']
+        optimization = click.confirm('Optimization enabled?')
+    else:
+        with open(contract_file, 'r') as f:
+            while True:
+                chunk = f.read(1024)
+                if not chunk:
+                    break
+                main_contract_src += chunk
+    msg = 'dummystring'
+    message_hash = encode_defunct(text=msg)
+    sig_msg = Account.sign_message(message_hash, ctx_obj['settings']['PRIVATEKEY'])
+    method_args = {
+        'msg': msg,
+        'sig': sig_msg.signature.hex(),
+        'contractAddress': contract_address,
+        'skipCompiling': False,
+        'name': contract_name,
+        'version': solidity_compiler,
+        'optimization': optimization,
+        'code': main_contract_src
+    }
+    click.secho(
+        f'Verifying contract {contract_name} at {contract_address} from source {contract_file}...',
+        fg='bright_white'
+    )
+    try:
+        c_r = make_http_call(
+            request_type='post',
+            url=ctx_obj['settings']['INTERNAL_API_ENDPOINT'] + '/verify',
+            headers={'accept': 'application/json'},
+            params=method_args
+        )
+    except Exception as e:
+        click.echo('Exception verifying contract', err=True)
+        if isinstance(e, EVHTTPError):
+            click.echo('Possible HTTP error. Try with --verbose flag for more information', err=True)
+            if verbose:
+                click.echo(e.__str__(), err=True)
+        elif isinstance(e, EVAPIError):
+            click.echo('Possible API error.Try with --verbose flag for more information', err=True)
+            if verbose:
+                click.echo(e.__str__(), err=True)
+        elif isinstance(e, EVBaseException) and verbose:
+            click.echo(e.__str__(), err=True)
+        sys.exit(1)
+    else:
+        click.secho('Contract verified!', fg='green')
+
+@cli.command()
 @click.argument('contractaddress', required=True)
 @click.argument('hookid', required=True)
 @click.argument('events', required=False)
@@ -453,6 +581,10 @@ def getoas(ctx_obj, contractaddress, verbose):
     else:
         click.echo(f'Contract {contractaddress} not registered on EthVigil')
 
+
+def _gen_compilers_list(l):
+    for k in l:
+        yield click.style(f'{k+1}: {l[k]["full"]}\n', fg='cyan')
 
 if __name__ == '__main__':
     cli()
