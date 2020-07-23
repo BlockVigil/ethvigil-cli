@@ -41,28 +41,28 @@ else:
 @click.pass_context
 def cli(ctx):
     s = CLEAN_SLATE_SETTINGS
+    try:
+        with open(settings_json_loc, 'r') as f:
+            s = json.load(f)
+    except:
+        try:
+            os.stat(settings_json_parent_dir)
+        except:
+            os.mkdir(settings_json_parent_dir)
+    finally:
+        ctx.obj = {'settings': s}
+
     if ctx.invoked_subcommand is None:
         click.secho('Run `ev-cli --help` or `ev-cli -h` for quick summary of available commands', fg='yellow')
-        click.secho('Run `ev-cli init` to initialize and set up a developer account', fg='yellow')
-        if click.confirm(
-                click.style(
-                    'Do you wish to setup and initialize a new EthVigil Beta developer account?',
-                    fg='bright_white'
-                )
-        ):
-            ctx.obj = {'settings': s}
-            ctx.invoke(init)
-    else:
-        try:
-            with open(settings_json_loc, 'r') as f:
-                s = json.load(f)
-        except:
-            try:
-                os.stat(settings_json_parent_dir)
-            except:
-                os.mkdir(settings_json_parent_dir)
-        finally:
-            ctx.obj = {'settings': s}
+        if s['PRIVATEKEY'] is None:
+            click.secho('Run `ev-cli init` to initialize and set up a developer account', fg='yellow')
+            if click.confirm(
+                    click.style(
+                        'Do you wish to setup and initialize a new EthVigil Beta developer account?',
+                        fg='bright_white'
+                    )
+            ):
+                ctx.invoke(init)
 
 
 def ev_login(internal_api_endpoint, private_key, verbose=False):
@@ -164,8 +164,11 @@ def init(ctx_obj, verbose):
                 click.echo('Login failed with credentials. Run `ev-cli reset`.')
                 sys.exit(2)
     else:
-        click.echo("A registered private key exists for this ev-cli installation. Run ev-cli reset if you wish"
-                   " to do a fresh install")
+        click.secho(
+            "A registered private key exists for this ev-cli installation. Run ev-cli reset if you wish"
+            " to do a fresh install",
+            fg='yellow'
+        )
         sys.exit(1)
 
 
