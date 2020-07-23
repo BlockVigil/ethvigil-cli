@@ -22,7 +22,7 @@ script:
   - mv dist/ev-cli ethvigil-cli/
   - chmod +x ethvigil-cli/ev-cli
   - cp README.md ethvigil-cli/
-  - ./ethvigil-cli/ev-cli
+  - ./ethvigil-cli/ev-cli -h
   - zip -r ev-cli-${TRAVIS_OS_NAME}.zip ethvigil-cli
   - mv ev-cli-${TRAVIS_OS_NAME}.zip dist/
   - ls dist/
