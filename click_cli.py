@@ -40,6 +40,7 @@ else:
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.pass_context
 def cli(ctx):
+    s = CLEAN_SLATE_SETTINGS
     if ctx.invoked_subcommand is None:
         click.secho('Run `ev-cli --help` or `ev-cli -h` for quick summary of available commands', fg='yellow')
         click.secho('Run `ev-cli init` to initialize and set up a developer account', fg='yellow')
@@ -49,18 +50,17 @@ def cli(ctx):
                     fg='bright_white'
                 )
         ):
+            ctx.obj = {'settings': s}
             ctx.invoke(init)
     else:
         try:
             with open(settings_json_loc, 'r') as f:
                 s = json.load(f)
         except:
-            s = CLEAN_SLATE_SETTINGS
             try:
                 os.stat(settings_json_parent_dir)
             except:
                 os.mkdir(settings_json_parent_dir)
-
         finally:
             ctx.obj = {'settings': s}
 
