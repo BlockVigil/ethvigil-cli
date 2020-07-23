@@ -1,3 +1,5 @@
+import time
+import webbrowser
 import sys
 import click
 import requests
@@ -16,13 +18,15 @@ CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help']
 )
 
-CLEAN_SLATE_SETTINGS = {
-  "PRIVATEKEY": None,
-  "INTERNAL_API_ENDPOINT": "https://beta.ethvigil.com/api" if not "ETHVIGIL_API_ENDPOINT" in os.environ else os.environ['ETHVIGIL_API_ENDPOINT'],
-  "REST_API_ENDPOINT": None,
-  "ETHVIGIL_USER_ADDRESS": "",
-  "ETHVIGIL_API_KEY": ""
 
+
+CLEAN_SLATE_SETTINGS = {
+    "PRIVATEKEY": None,
+    "INTERNAL_API_ENDPOINT": "https://beta.ethvigil.com/api" if not "ETHVIGIL_API_ENDPOINT" in os.environ else os.environ['ETHVIGIL_API_ENDPOINT'],
+    "REST_API_ENDPOINT": None,
+    "ETHVIGIL_USER_ADDRESS": "",
+    "ETHVIGIL_API_KEY": "",
+    "ETHVIGIL_READ_KEY": ""
 }
 
 if "ETHVIGIL_CLI_TESTMODE" in os.environ:
@@ -32,24 +36,33 @@ else:
     settings_json_loc = pwd.getpwuid(os.getuid()).pw_dir + '/.ethvigil/settings.json'
     settings_json_parent_dir = pwd.getpwuid(os.getuid()).pw_dir + '/.ethvigil'
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.pass_context
 def cli(ctx):
-    try:
-        with open(settings_json_loc, 'r') as f:
-            s = json.load(f)
-    except:
-        # settings file does not exist, copy over settings.null.json
+    if ctx.invoked_subcommand is None:
+        click.secho('Run `ev-cli --help` or `ev-cli -h` for quick summary of available commands', fg='yellow')
+        click.secho('Run `ev-cli init` to initialize and set up a developer account', fg='yellow')
+        if click.confirm(
+                click.style(
+                    'Do you wish to setup and initialize a new EthVigil Beta developer account?',
+                    fg='bright_white'
+                )
+        ):
+            ctx.invoke(init)
+    else:
         try:
-            os.stat(settings_json_parent_dir)
+            with open(settings_json_loc, 'r') as f:
+                s = json.load(f)
         except:
-            os.mkdir(settings_json_parent_dir)
-        # create settings file from empty JSON file
-        with open(settings_json_loc, 'w') as f2:
-            json.dump(obj=CLEAN_SLATE_SETTINGS, fp=f2)
-        s = CLEAN_SLATE_SETTINGS
-    finally:
-        ctx.obj = {'settings': s}
+            s = CLEAN_SLATE_SETTINGS
+            try:
+                os.stat(settings_json_parent_dir)
+            except:
+                os.mkdir(settings_json_parent_dir)
+
+        finally:
+            ctx.obj = {'settings': s}
 
 
 def ev_login(internal_api_endpoint, private_key, verbose=False):
@@ -99,12 +112,20 @@ def fill_rest_api_endpoint(new_endpoint):
             click.echo('Set REST API endpoint for contract calls in settings.json')
             click.echo(new_endpoint)
 
+
 @cli.command()
 @click.option('--verbose', 'verbose', default=False, type=bool)
 @click.pass_obj
 def init(ctx_obj, verbose):
+    """
+    Launches a signup process if no EthVigil credentials are found.
+    """
     if not ctx_obj['settings']['PRIVATEKEY']:
-        invite_code = click.prompt('Enter your invite code', hide_input=True)
+        if "ETHVIGIL_CLI_TESTMODE" not in os.environ:
+            click.secho('Redirecting to the signup page...', fg='green')
+            time.sleep(2)
+            webbrowser.open('https://beta.ethvigil.com/?clisignup=true')
+        invite_code = click.prompt('Enter your invite code')
         new_account = Account.create('RANDOM ENTROPY WILL SUCK YOUR SOUL')
         signup_status = ev_signup(ctx_obj['settings']['INTERNAL_API_ENDPOINT'], invite_code, new_account.key.hex(), verbose)
         if not signup_status:
@@ -124,7 +145,7 @@ def init(ctx_obj, verbose):
                 ctx_obj['settings']['READ_API_KEY'] = login_data['readKey']
                 ctx_obj['settings']['REST_API_ENDPOINT'] = login_data['api_prefix']
 
-                click.echo('You have signed up and logged in successfully to EthVigil Alpha')
+                click.echo('You have signed up and logged in successfully to EthVigil Beta')
                 if verbose:
                     click.echo('---YOU MIGHT WANT TO COPY THESE DETAILS TO A SEPARATE FILE---')
                     click.echo('===Private key (that signs messages to interact with EthVigil APIs===')
@@ -151,18 +172,33 @@ def init(ctx_obj, verbose):
 @cli.command()
 @click.pass_obj
 def reset(ctx_obj):
-    if click.confirm('Do you want to reset the current EthVigil CLI configuration and state?'):
+    """
+    Resets CLI and deletes existing credentials
+    """
+    if click.confirm(
+            click.style(
+                'Do you want to reset the current EthVigil CLI configuration and state?',
+                fg='bright_white'
+            )
+    ):
         try:
             with open(settings_json_loc, 'w') as f2:
                 json.dump(CLEAN_SLATE_SETTINGS, f2)
         finally:
-            click.echo('EthVigil CLI tool has been reset. Run `ev-cli init` to reconfigure.')
+            click.secho(
+                'EthVigil CLI tool has been reset. Run `ev-cli init` '
+                'or `ev-cli importsettings` to reconfigure.',
+                fg='green'
+            )
 
 
 @cli.command()
 @click.option('--verbose', 'verbose_flag', type=bool, default=False)
 @click.pass_obj
 def login(ctx_obj, verbose_flag):
+    """
+    Health check account and repopulate settings file
+    """
     if not ctx_obj['settings']['PRIVATEKEY']:
         click.echo('No Private Key configured in settings.json to interact with EthVigil APIs. Run `ev-cli init`.')
         return
@@ -177,6 +213,13 @@ def login(ctx_obj, verbose_flag):
 @click.option('--raw', 'raw', type=bool, default=False)
 @click.pass_obj
 def accountinfo(ctx_obj, raw):
+    """
+    EthVigil account information.
+    Displays API keys, request end points, registered contracts against the set up account.
+    """
+    if not ctx_obj['settings']['PRIVATEKEY']:
+        click.secho('No account set up yet. Run `ev-cli init` or `ev-cli importsettings`. Check docs for instructions.', fg='red')
+        sys.exit(0)
     a_data = ev_login(internal_api_endpoint=ctx_obj['settings']['INTERNAL_API_ENDPOINT'],
                       private_key=ctx_obj['settings']['PRIVATEKEY'],
                       verbose=False)
@@ -207,6 +250,9 @@ def accountinfo(ctx_obj, raw):
 @cli.command()
 @click.pass_obj
 def dumpsettings(ctx_obj):
+    """
+    Prints out account settings.
+    """
     click.echo(json.dumps(ctx_obj['settings']))
 
 
@@ -214,6 +260,9 @@ def dumpsettings(ctx_obj):
 @click.argument('importfile', type=click.File('r'))
 @click.option('--verbose', 'verbose', type=bool, default=False)
 def importsettings(importfile, verbose):
+    """
+    Import developer account from an existing settings.json
+    """
     settings = json.load(importfile)
     if verbose:
         click.echo('Got settings from input file: ')
@@ -221,6 +270,7 @@ def importsettings(importfile, verbose):
     # write into settings.json
     with open(pwd.getpwuid(os.getuid()).pw_dir+'/.ethvigil/settings.json', 'w') as f:
         json.dump(settings, f)
+
 
 @cli.command()
 @click.option('--contractName', 'contract_name', required=True,
@@ -340,6 +390,9 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
 @click.argument('url', required=True)
 @click.pass_obj
 def registerhook(ctx_obj, contract, url):
+    """
+    Registers a webhook endpoint and returns an ID for hook
+    """
     headers = {'accept': 'application/json', 'Content-Type': 'application/json',
                'X-API-KEY': ctx_obj['settings']['ETHVIGIL_API_KEY']}
     msg = 'dummystring'
@@ -492,12 +545,23 @@ def verifycontract(ctx_obj, verbose, interactive, contract_address, contract_nam
     else:
         click.secho('Contract verified!', fg='green')
 
+
 @cli.command()
 @click.argument('contractaddress', required=True)
 @click.argument('hookid', required=True)
 @click.argument('events', required=False)
 @click.pass_obj
 def addhooktoevent(ctx_obj, contractaddress, hookid, events):
+    """
+    Receive smart contract events as JSON payloads.
+    This delivers JSON payloads to the webhook endpoint registered against the HOOKID.
+
+    HOOKID is received after calling `ev-cli registerhook`
+
+    EVENTS is a list of events on which the hook will be registered.
+    For example: ['*'] or ['Transfer', 'Approve'].
+    If you do not pass this argument, all events will be pushed to the hook endpoint.
+    """
     msg = 'dummystring'
     message_hash = encode_defunct(text=msg)
     sig_msg = Account.sign_message(message_hash, ctx_obj['settings']['PRIVATEKEY'])
@@ -539,6 +603,13 @@ def addhooktoevent(ctx_obj, contractaddress, hookid, events):
 @click.argument('hookid', required=True)
 @click.pass_obj
 def enabletxmonitor(ctx_obj, contractaddress, hookid):
+    """
+    Receive transactions on contracts as JSON payloads.
+
+    CONTRACTADDRESS is the address of a deployed and registered contract on your EthVigil account.
+
+    HOOKID is received after calling `ev-cli registerhook`
+    """
     # enable tx monitoring on contract
     msg = 'dummystring'
     message_hash = encode_defunct(text=msg)
@@ -572,6 +643,9 @@ def enabletxmonitor(ctx_obj, contractaddress, hookid):
 @click.option('--verbose', 'verbose', type=bool, default=False)
 @click.pass_obj
 def getoas(ctx_obj, contractaddress, verbose):
+    """
+    Returns OpenAPI spec link against a contract
+    """
     a_data = ev_login(ctx_obj['settings']['INTERNAL_API_ENDPOINT'], ctx_obj['settings']['PRIVATEKEY'], verbose=False)
     registered_contracts = list(filter(lambda x: x['address'] == to_normalized_address(contractaddress), a_data['contracts']))
     if verbose:
@@ -585,6 +659,7 @@ def getoas(ctx_obj, contractaddress, verbose):
 def _gen_compilers_list(l):
     for k in l:
         yield click.style(f'{k+1}: {l[k]["full"]}\n', fg='cyan')
+
 
 if __name__ == '__main__':
     cli()
