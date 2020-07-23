@@ -12,7 +12,7 @@ matrix:
       osx_image: xcode10.2
       language: shell
 
-install: pip3 install -r requirements.txt --upgrade pip  # all three OSes agree about 'pip3'
+install: pip3 install -r requirements.txt --upgrade pip --upgrade setuptools # all three OSes agree about 'pip3'
 
 script:
   - python3 --version || python --version;
