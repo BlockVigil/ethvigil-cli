@@ -114,7 +114,7 @@ def fill_rest_api_endpoint(new_endpoint):
 
 
 @cli.command()
-@click.option('--verbose', '-v', is_flag=True, help='Verbose')
+@click.option('--verbose', 'verbose', default=False, type=bool)
 @click.pass_obj
 def init(ctx_obj, verbose):
     """
@@ -196,7 +196,7 @@ def reset(ctx_obj):
 
 
 @cli.command()
-@click.option('--verbose', '-v', is_flag=True, help='Verbose')
+@click.option('--verbose', 'verbose_flag', type=bool, default=False)
 @click.pass_obj
 def login(ctx_obj, verbose_flag):
     """
@@ -261,7 +261,7 @@ def dumpsettings(ctx_obj):
 
 @cli.command()
 @click.argument('importfile', type=click.File('r'))
-@click.option('--verbose', '-v', is_flag=True, help='Verbose')
+@click.option('--verbose', 'verbose', type=bool, default=False)
 def importsettings(importfile, verbose):
     """
     Import developer account from an existing settings.json
@@ -283,11 +283,10 @@ def importsettings(importfile, verbose):
                    'Eg: \'["abced", "0x008604d4997a15a77f00CA37aA9f6A376E129DC5"]\' '
                    'for constructor inputs of type (string, address). '
                    'Can be left empty if there are no inputs accepted by the constructor')
-@click.option('--interactive', '-i', is_flag=True, help='Turn on interactive mode')
-@click.option('--verbose', '-v', is_flag=True, help='Verbose')
+@click.option('--verbose', 'verbose', type=bool, default=False)
 @click.argument('contract', type=click.Path(exists=True, dir_okay=False))
 @click.pass_obj
-def deploy(ctx_obj, contract_name, inputs, interactive, verbose, contract):
+def deploy(ctx_obj, contract_name, inputs, verbose, contract):
     """
     Deploys a smart contract from the solidity source code specified
 
@@ -653,7 +652,7 @@ def enabletxmonitor(ctx_obj, contractaddress, hookid):
 
 @cli.command()
 @click.argument('contractaddress', required=True)
-@click.option('--verbose', '-v', is_flag=True, help='Verbose')
+@click.option('--verbose', 'verbose', type=bool, default=False)
 @click.pass_obj
 def getoas(ctx_obj, contractaddress, verbose):
     """
