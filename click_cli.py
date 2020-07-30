@@ -114,7 +114,7 @@ def fill_rest_api_endpoint(new_endpoint):
 
 
 @cli.command()
-@click.option('--verbose', 'verbose', default=False, type=bool)
+@click.option('--verbose', '-v', is_flag=True, help='Verbose')
 @click.pass_obj
 def init(ctx_obj, verbose):
     """
@@ -196,7 +196,7 @@ def reset(ctx_obj):
 
 
 @cli.command()
-@click.option('--verbose', 'verbose_flag', type=bool, default=False)
+@click.option('--verbose', '-v', is_flag=True, help='Verbose')
 @click.pass_obj
 def login(ctx_obj, verbose_flag):
     """
@@ -261,7 +261,7 @@ def dumpsettings(ctx_obj):
 
 @cli.command()
 @click.argument('importfile', type=click.File('r'))
-@click.option('--verbose', 'verbose', type=bool, default=False)
+@click.option('--verbose', '-v', is_flag=True, help='Verbose')
 def importsettings(importfile, verbose):
     """
     Import developer account from an existing settings.json
@@ -283,10 +283,11 @@ def importsettings(importfile, verbose):
                    'Eg: \'["abced", "0x008604d4997a15a77f00CA37aA9f6A376E129DC5"]\' '
                    'for constructor inputs of type (string, address). '
                    'Can be left empty if there are no inputs accepted by the constructor')
-@click.option('--verbose', 'verbose', type=bool, default=False)
+@click.option('--interactive', '-i', is_flag=True, help='Turn on interactive mode')
+@click.option('--verbose', '-v', is_flag=True, help='Verbose')
 @click.argument('contract', type=click.Path(exists=True, dir_okay=False))
 @click.pass_obj
-def deploy(ctx_obj, contract_name, inputs, verbose, contract):
+def deploy(ctx_obj, contract_name, inputs, interactive, verbose, contract):
     """
     Deploys a smart contract from the solidity source code specified
 
@@ -386,10 +387,13 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
         click.echo('EthVigil deploy response: ')
         click.echo(r.text)
     if r.status_code == requests.codes.ok:
-        click.echo(f'Contract {contract_name} deployed successfully')
         r = r.json()
-        click.echo(f'Contract Address: {r["data"]["contract"]}')
-        click.echo(f'Deploying tx: {r["data"]["hash"]}')
+        if (r["success"]):
+            click.echo(f'Contract {contract_name} deployed successfully')
+            click.echo(f'Contract Address: {r["data"]["contract"]}')
+            click.echo(f'Deploying tx: {r["data"]["hash"]}')
+        else:
+            click.echo('Contract deployment failed')
     else:
         click.echo('Contract deployment failed')
 
@@ -649,7 +653,7 @@ def enabletxmonitor(ctx_obj, contractaddress, hookid):
 
 @cli.command()
 @click.argument('contractaddress', required=True)
-@click.option('--verbose', 'verbose', type=bool, default=False)
+@click.option('--verbose', '-v', is_flag=True, help='Verbose')
 @click.pass_obj
 def getoas(ctx_obj, contractaddress, verbose):
     """
