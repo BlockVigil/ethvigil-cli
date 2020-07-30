@@ -4,7 +4,7 @@
  * Code released under the MIT license.
 */
 
-pragma solidity ^0.5.7;
+pragma solidity ^0.5.17;
 
 contract Ownable {
     address public owner;
