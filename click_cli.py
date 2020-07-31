@@ -276,8 +276,8 @@ def importsettings(importfile, verbose):
 
 
 @cli.command()
-@click.option('--contractName', 'contract_name', required=True,
-              help='name of the contract to be deployed. For eg. FixedSupplyToken')
+@click.option('--contractName', 'contract_name',
+              help='name of the contract to be deployed. For eg. ERC20Mintable. REQUIRED. If you do not specify, you shall be prompted for the same.')
 @click.option('--constructorInputs', 'inputs',
               help='constructor input values as a JSON list. OPTIONAL. If you do not specify, you shall be prompted for the same. '
                    'Eg: \'["abced", "0x008604d4997a15a77f00CA37aA9f6A376E129DC5"]\' '
@@ -295,10 +295,16 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
     Usage example: ev-cli deploy contracts/Microblog.sol --contractName=Microblog --constructorInputs='JSON representation of the constructor arguments in an array'
     """
     constructor_input_prompt = False
-    if verbose:
-        click.echo('Got constructor inputs: ')
-        click.echo(inputs)
+    if contract_name:
+        if verbose:
+            click.echo('Got contract name: ')
+            click.echo(contract_name)
+    else:
+        contract_name = click.prompt('Enter the contract name')
     if inputs:
+        if verbose:
+            click.echo('Got constructor inputs: ')
+            click.echo(inputs)
         c_inputs = json.loads(inputs)
     else:
         constructor_input_prompt = True
@@ -380,10 +386,13 @@ def deploy(ctx_obj, contract_name, inputs, verbose, contract):
         click.echo('EthVigil deploy response: ')
         click.echo(r.text)
     if r.status_code == requests.codes.ok:
-        click.echo(f'Contract {contract_name} deployed successfully')
         r = r.json()
-        click.echo(f'Contract Address: {r["data"]["contract"]}')
-        click.echo(f'Deploying tx: {r["data"]["hash"]}')
+        if (r["success"]):
+            click.echo(f'Contract {contract_name} deployed successfully')
+            click.echo(f'Contract Address: {r["data"]["contract"]}')
+            click.echo(f'Deploying tx: {r["data"]["hash"]}')
+        else:
+            click.echo('Contract deployment failed')
     else:
         click.echo('Contract deployment failed')
 
